@@ -1,0 +1,101 @@
+config OSC = INTIO2 
+config BOR = OFF
+config WDT = OFF 
+config MCLRE = ON
+config STVREN = OFF
+
+    #include <xc.inc>
+    goto start
+    psect data  
+lookup:	 DB  0xBD, 0x9F, 0xCF, 0xE7, 0xF3, 0xF9
+lookies: DB 0x9F, 0xBD, 0xF9, 0xF3, 0xE7, 0xCF
+look3:   DB 0xFF, 0xFE
+    ;simple test code
+    psect code
+CSEG	EQU 0x40    ; 7segment CLOCKWISE pattern table starting address in data memory
+CCSEG   EQU 0x60    ; 7segment counterCLOCKWISE pattern table starting address in data memory
+I	EQU 0x70    ; used as a counter index
+D	EQU 0x80    ; delay register
+DLps	EQU 0x90
+start:	
+	; Move the 7seg pattern from program memory into data memory
+	movlw	low lookup
+	movwf	TBLPTRL, f, a
+	movlw	high lookup
+	movwf	TBLPTRH, f, a
+	movlw	low highword lookup
+	movwf	TBLPTRU, f, a
+	
+	lfsr	0, CSEG ; starting address in data memory
+	movlw	6
+	movwf	I, f, a ; initialize counter with 10
+loop:	TBLRD*+    ; read 1B from program memory and advance TBLPTR by 1
+	movff	TABLAT, POSTINC0 ;copy TABLAT into INDF0 them move FSR0 pointer forward
+	decf	I, f, a;
+	bnz	loop
+	
+	movlw	low lookies
+	movwf	TBLPTRL, f, a
+	movlw	high lookies
+	movwf	TBLPTRH, f, a
+	movlw	low highword lookies
+	movwf	TBLPTRU, f, a
+	
+      lfsr    1, CCSEG
+       movlw 6
+       movwf I, f, a
+       call loop
+       
+       movlw	low lookies
+	movwf	TBLPTRL, f, a
+ 
+       lfsr    2, CCSEG
+       movlw 2
+       movwf I, f, a
+       call loop
+
+
+delay500ms: 
+       nop
+       decfsz	D, 1, 1
+       goto	delay500ms
+       nop
+       decfsz	DLps, 1, 1
+       goto	delay500ms
+       return	0
+       
+	; set the I/O port directions
+	setf	ADCON1, a   ; turn off the ADC
+	clrf	TRISA, a    ; output connected to 7seg
+	setf	TRISD, a    ; input  connected to 2 switches
+clockwise:
+    movlw 0x01
+    movwf 0xA0 ;placeholder
+    call dipswitch
+    call infloo
+
+counterclockwise:
+    movlw 0x03
+    movwf 0xB0 ;placeholder
+    call dispswitch 
+    call infloo
+    
+infloo: 
+    movf PORTD, w, a
+    andlw 0x03
+    call bcd2sseg, 0
+    movwf PORTA, a
+    bra infloo
+dipswitch:
+    movf PORTD, w, a
+    andlw 0x03 ; ands last 2 bits because only using 2 switches for vals 1,2,3
+    return 0
+	
+bcd2sseg: 
+    lfsr	0, SSEG; move fsr0 pointer back to start of table
+    movf	PLUSW0, w, a
+    return 0;
+stop:
+	bra stop
+	
+	end

@@ -1,0 +1,2 @@
+; https://youtube.com/shorts/473IrIoDp8w?feature=share
+; demo shows c code but assembly works the exact same after testing

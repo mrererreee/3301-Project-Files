@@ -1,0 +1,61 @@
+config OSC = INTIO2
+config BOR = OFF
+config STVREN = OFF
+config WDT = OFF
+config MCLRE = ON
+   
+#include <xc.inc>
+    goto start
+    
+    psect code
+ 
+ ; 
+ start: 
+    setf    ADCON1, a
+   ; movlw   0x02
+   ; movwf   TRISC, a
+   ; movlw   0x02
+   ; movwf   TRISD, a
+   
+   clrf TRISC, a
+   clrf TRISD, a
+   
+   bsf TRISC, 1, a
+   bsf TRISD,1,a 
+    
+; bz for when bits are low
+; bnz for when bits are high
+    
+infloop: 
+    btfss   PORTC, 1, a
+    call    ledCon
+    call    ledCoff
+    
+    btfss   PORTD, 1, a
+    call    ledDon
+    call    ledDoff
+    
+    bra	    infloop
+    
+ledCon:
+    bcf	    PORTC, 0, a
+    return
+    
+    
+ledDon:
+    bcf	    PORTD, 0, a
+    return
+    
+ledCoff: 
+    bsf	    PORTC, 0, a
+    return
+
+ledDoff:
+    bsf	    PORTD, 0, a
+    return
+
+ 
+    
+    
+end
+
